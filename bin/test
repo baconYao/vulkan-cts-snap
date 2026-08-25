@@ -64,9 +64,9 @@ fi
 
 ARCH="${SNAP_ARCH:-$(dpkg --print-architecture)}"
 case "$ARCH" in
-    amd64) GPU_ARCH=x86_64;  ARCH_TRIPLE=x86_64-linux-gnu ;;
-    arm64) GPU_ARCH=aarch64; ARCH_TRIPLE=aarch64-linux-gnu ;;
-    *)     GPU_ARCH="${ARCH}"; ARCH_TRIPLE="${ARCH}-linux-gnu" ;;
+    amd64) ARCH_TRIPLE=x86_64-linux-gnu ;;
+    arm64) ARCH_TRIPLE=aarch64-linux-gnu ;;
+    *)     ARCH_TRIPLE="${ARCH}-linux-gnu" ;;
 esac
 
 if [ "$NO_CONFINEMENT" = "true" ]; then
@@ -92,7 +92,7 @@ else
     # Set up Vulkan ICD and libraries from gpu-2404 content interface
     if [ -d "${SNAP}/gpu-2404" ]; then
         export VK_ICD_FILENAMES
-        VK_ICD_FILENAMES=$(ls "${SNAP}/gpu-2404/usr/share/vulkan/icd.d/"*"${GPU_ARCH}"*.json 2>/dev/null | tr '\n' ':')
+        VK_ICD_FILENAMES=$(ls "${SNAP}/gpu-2404/usr/share/vulkan/icd.d/"*.json 2>/dev/null | tr '\n' ':')
         export LD_LIBRARY_PATH="${SNAP}/gpu-2404/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     else
         echo "Error: gpu-2404 content interface not found at ${SNAP}/gpu-2404"
