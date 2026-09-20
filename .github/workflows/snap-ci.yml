@@ -9,10 +9,27 @@ on:
 
 jobs:
   build:
-    name: Build snap (${{ matrix.arch }})
+    name: Build ${{ matrix.base }} (${{ matrix.arch }}) snap
     strategy:
+      fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        # base:    the project directory to build (each is a self-contained
+        #          snapcraft project rooted at <dir>/snap/snapcraft.yaml)
+        # arch:    matches the label used to select the self-hosted runner
+        # release: Snap Store channel to publish to
+        include:
+          - base: core22
+            arch: x64
+            release: core22/edge
+          - base: core22
+            arch: arm64
+            release: core22/edge
+          - base: core24
+            arch: x64
+            release: edge
+          - base: core24
+            arch: arm64
+            release: edge
     runs-on: [self-hosted, linux, "${{ matrix.arch }}", large]
     steps:
       - name: Checkout
@@ -21,18 +38,33 @@ jobs:
       - name: Build snap
         id: build
         uses: snapcore/action-build@v1
+        with:
+          path: ${{ matrix.base }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vulkan-cts-snap-${{ matrix.arch }}
+          name: vulkan-cts-snap-${{ matrix.base }}-${{ matrix.arch }}
           path: ${{ steps.build.outputs.snap }}
 
   publish:
-    name: Publish to edge (${{ matrix.arch }})
+    name: Publish ${{ matrix.base }} to edge (${{ matrix.arch }})
     strategy:
+      fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        include:
+          - base: core22
+            arch: x64
+            release: core22/edge
+          - base: core22
+            arch: arm64
+            release: core22/edge
+          - base: core24
+            arch: x64
+            release: edge
+          - base: core24
+            arch: arm64
+            release: edge
     runs-on: [self-hosted, linux, "${{ matrix.arch }}", large]
     needs: build
     if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
@@ -40,7 +72,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: vulkan-cts-snap-${{ matrix.arch }}
+          name: vulkan-cts-snap-${{ matrix.base }}-${{ matrix.arch }}
           path: .
 
       - name: Resolve snap file
@@ -60,4 +92,4 @@ jobs:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
           snap: ${{ steps.snap.outputs.path }}
-          release: edge
+          release: ${{ matrix.release }}

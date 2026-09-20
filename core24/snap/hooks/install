@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+# Under strict confinement we cannot write to /etc. Keep the hook minimal
+# and snap-local.
+snapctl set agent=enabled || true
+
+echo "vulkan-cts: install hook completed (strict confinement)."

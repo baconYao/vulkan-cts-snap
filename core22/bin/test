@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# When invoked directly (bypassing the snap launcher), SNAP is not set.
+# Derive it from this script's own location: test lives at $SNAP/test.
+SNAP="${SNAP:-$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")}"
+
+NO_CONFINEMENT=false
+DEQP_ARGS=()
+LOG_FILENAME="TestResults.qpa"
+HAS_TESTSPEC=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-confinement)
+            NO_CONFINEMENT=true
+            ;;
+        --caselist=*)
+            CASELIST_PATH="${arg#--caselist=}"
+            DEQP_ARGS+=(--deqp-caselist-file="${SNAP}/usr/share/vulkan-cts/${CASELIST_PATH}")
+            LOG_FILENAME="$(basename "${CASELIST_PATH}" .txt).qpa"
+            HAS_TESTSPEC=true
+            ;;
+        --deqp-case=*)
+            DEQP_ARGS+=("$arg")
+            HAS_TESTSPEC=true
+            ;;
+        -*)
+            DEQP_ARGS+=("$arg")
+            ;;
+        *)
+            if [ "$HAS_TESTSPEC" = false ]; then
+                DEQP_ARGS+=(--deqp-case="$arg")
+                HAS_TESTSPEC=true
+            else
+                DEQP_ARGS+=("$arg")
+            fi
+            ;;
+    esac
+done
+
+if [ "$HAS_TESTSPEC" = false ]; then
+    echo "Usage: vulkan-cts.test [--no-confinement] <test-spec> [args passed to deqp-vk]"
+    echo ""
+    echo "  <test-spec> is one of:"
+    echo "    --deqp-case=<pattern>   Run tests matching a case name or glob patterni from caselist files"
+    echo "                            (e.g. dEQP-VK.info.* or dEQP-VK.info.build)"
+    echo "    --caselist=<path>       Run all tests listed in a caselist file."
+    echo "                            Use a path as shown by 'vulkan-cts.list-tests'."
+    echo "    <pattern>               Shorthand for --deqp-case=<pattern>"
+    echo ""
+    echo "  --no-confinement          Skip snap-bundled GPU/Vulkan drivers and use host"
+    echo "                            drivers exclusively. Intended for use with the"
+    echo "                            Checkbox framework when snap sandboxing is removed."
+    echo ""
+    echo "  Any additional options are passed directly to deqp-vk (the underlying"
+    echo "  Vulkan CTS runner). Run 'deqp-vk --help' inside the snap for the full list."
+    echo ""
+    echo "Examples:"
+    echo "  vulkan-cts.test dEQP-VK.info.build"
+    echo "  vulkan-cts.test --deqp-case=dEQP-VK.info.*"
+    echo "  vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt"
+    exit 1
+fi
+
+ARCH="${SNAP_ARCH:-$(dpkg --print-architecture)}"
+case "$ARCH" in
+    amd64) ARCH_TRIPLE=x86_64-linux-gnu ;;
+    arm64) ARCH_TRIPLE=aarch64-linux-gnu ;;
+    *)     ARCH_TRIPLE="${ARCH}-linux-gnu" ;;
+esac
+
+if [ "$NO_CONFINEMENT" = "true" ]; then
+    # Use host drivers exclusively.
+    # LD_PRELOAD overrides DT_RPATH embedded by snapcraft's patchelf pass.
+    # LD_LIBRARY_PATH covers the rest of the host driver stack.
+    # Snap layout mounts are absent when Checkbox strips sandboxing, so
+    # the host's Vulkan ICD loader finds ICDs from /usr/share/vulkan/icd.d/ automatically.
+    HOST_VK="/usr/lib/${ARCH_TRIPLE}/libvulkan.so.1"
+    if [ ! -f "$HOST_VK" ]; then
+        echo "Error: --no-confinement requires the host Vulkan loader at $HOST_VK"
+        echo "Install libvulkan1 (or equivalent) on the host before using this mode."
+        exit 1
+    fi
+    # libwayland-client must also be preloaded: the host's Vulkan ICD
+    # (libvulkan_intel.so etc.) uses symbols (e.g. wl_fixes_interface) absent
+    # from the older libwayland bundled in the snap.
+    HOST_WL="/usr/lib/${ARCH_TRIPLE}/libwayland-client.so.0"
+    export LD_PRELOAD="${HOST_WL}:${HOST_VK}"
+    export LD_LIBRARY_PATH="/usr/lib/${ARCH_TRIPLE}:/usr/lib"
+    echo "Host Vulkan loader: ${HOST_VK}"
+else
+    # Set up Vulkan ICD and libraries from graphics-core22 content interface
+    if [ -d "${SNAP}/graphics" ]; then
+        export VK_ICD_FILENAMES
+        VK_ICD_FILENAMES=$(ls "${SNAP}/graphics/usr/share/vulkan/icd.d/"*.json 2>/dev/null | tr '\n' ':')
+        export LD_LIBRARY_PATH="${SNAP}/graphics/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    else
+        echo "Error: graphics-core22 content interface not found at ${SNAP}/graphics"
+        echo "Connect it with: snap connect vulkan-cts:graphics-core22 mesa-core22:graphics-core22"
+        exit 1
+    fi
+fi
+
+# Create a working directory for test results
+WORK_DIR="${HOME}/.vulkan-cts"
+mkdir -p "${WORK_DIR}"
+
+# deqp resolves data paths relative to CWD, so run from the data root.
+cd "${SNAP}/usr/share/vulkan-cts"
+
+exec "${SNAP}/usr/bin/deqp-vk" \
+    "${DEQP_ARGS[@]}" \
+    --deqp-log-filename="${WORK_DIR}/${LOG_FILENAME}"

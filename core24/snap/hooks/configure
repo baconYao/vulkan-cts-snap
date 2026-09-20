@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+"""
+Minimal configure hook for strict confinement.
+Avoids external snap dependencies and /etc writes.
+"""
+print("vulkan-cts: configure hook completed (strict confinement).")
