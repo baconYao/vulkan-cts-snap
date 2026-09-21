@@ -91,9 +91,43 @@ if [ "$NO_CONFINEMENT" = "true" ]; then
 else
     # Set up Vulkan ICD and libraries from gpu-2404 content interface
     if [ -d "${SNAP}/gpu-2404" ]; then
-        export VK_ICD_FILENAMES
-        VK_ICD_FILENAMES=$(ls "${SNAP}/gpu-2404/usr/share/vulkan/icd.d/"*.json 2>/dev/null | tr '\n' ':')
-        export LD_LIBRARY_PATH="${SNAP}/gpu-2404/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+        CONTENT_DIR="${SNAP}/gpu-2404"
+        VK_ICD_FILENAMES=$(ls "${CONTENT_DIR}/usr/share/vulkan/icd.d/"*.json 2>/dev/null | tr '\n' ':')
+        if [ -z "$VK_ICD_FILENAMES" ]; then
+            # Some vendor drivers (e.g. Arm Mali) ship a standard Khronos
+            # libvulkan.so.1 loader plus a driver library (libmali.so) that
+            # implements the vk_icd* ABI directly, but no ICD manifest JSON
+            # at all. Without a manifest the loader reports "Found no
+            # drivers" (VK_ERROR_INCOMPATIBLE_DRIVER) even though the
+            # driver library is present. Generate a manifest on the fly.
+            for candidate in "${CONTENT_DIR}/lib/libmali.so" "${CONTENT_DIR}/lib"/libmali.so.*; do
+                if [ -e "$candidate" ]; then
+                    GENERATED_ICD_DIR="${XDG_RUNTIME_DIR:-${SNAP_USER_COMMON:-/tmp}}"
+                    mkdir -p "${GENERATED_ICD_DIR}"
+                    GENERATED_ICD="${GENERATED_ICD_DIR}/vulkan-cts-generated-icd.json"
+                    cat > "${GENERATED_ICD}" <<EOF
+{
+    "file_format_version": "1.0.0",
+    "ICD": {
+        "library_path": "${candidate}",
+        "api_version": "1.3.0"
+    }
+}
+EOF
+                    VK_ICD_FILENAMES="${GENERATED_ICD}"
+                    break
+                fi
+            done
+        fi
+        # Only export if manifests exist: an empty VK_ICD_FILENAMES makes
+        # the standard loader report zero ICDs (VK_ERROR_INCOMPATIBLE_DRIVER)
+        # instead of just being ignored.
+        [ -n "$VK_ICD_FILENAMES" ] && export VK_ICD_FILENAMES
+        # Prepend the content interface's lib dir so the vendor's Vulkan
+        # library takes precedence over this snap's own bundled Vulkan
+        # loader (libvulkan1, staged under $SNAP/usr/lib) which is already
+        # earlier in LD_LIBRARY_PATH at this point and would otherwise win.
+        export LD_LIBRARY_PATH="${CONTENT_DIR}/lib:${CONTENT_DIR}/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     else
         echo "Error: gpu-2404 content interface not found at ${SNAP}/gpu-2404"
         echo "Connect it with: snap connect baconyao-vulkan-cts-24:gpu-2404 mesa-2404:gpu-2404"

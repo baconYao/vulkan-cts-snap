@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/bin/sh
 
-"""
-Minimal configure hook for strict confinement.
-Avoids external snap dependencies and /etc writes.
-"""
-print("baconyao-vulkan-cts-26: configure hook completed (strict confinement).")
+# Minimal configure hook for strict confinement. Avoids external snap
+# dependencies (no python3 guaranteed in the base's PATH) and /etc writes.
+set -e
+
+echo "baconyao-vulkan-cts-26: configure hook completed (strict confinement)."
