@@ -7,6 +7,8 @@ lint:
 platforms:
   amd64:
     build-on: [amd64]
+  arm64:
+    build-on: [amd64, arm64]
 version: '1.4.5'
 license: Apache-2.0
 summary: Khronos Vulkan Conformance Test Suite
