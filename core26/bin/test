@@ -39,13 +39,13 @@ for arg in "$@"; do
 done
 
 if [ "$HAS_TESTSPEC" = false ]; then
-    echo "Usage: baconyao-vulkan-cts-24.test [--no-confinement] <test-spec> [args passed to deqp-vk]"
+    echo "Usage: baconyao-vulkan-cts-26.test [--no-confinement] <test-spec> [args passed to deqp-vk]"
     echo ""
     echo "  <test-spec> is one of:"
     echo "    --deqp-case=<pattern>   Run tests matching a case name or glob patterni from caselist files"
     echo "                            (e.g. dEQP-VK.info.* or dEQP-VK.info.build)"
     echo "    --caselist=<path>       Run all tests listed in a caselist file."
-    echo "                            Use a path as shown by 'baconyao-vulkan-cts-24.list-tests'."
+    echo "                            Use a path as shown by 'baconyao-vulkan-cts-26.list-tests'."
     echo "    <pattern>               Shorthand for --deqp-case=<pattern>"
     echo ""
     echo "  --no-confinement          Skip snap-bundled GPU/Vulkan drivers and use host"
@@ -56,9 +56,9 @@ if [ "$HAS_TESTSPEC" = false ]; then
     echo "  Vulkan CTS runner). Run 'deqp-vk --help' inside the snap for the full list."
     echo ""
     echo "Examples:"
-    echo "  baconyao-vulkan-cts-24.test dEQP-VK.info.build"
-    echo "  baconyao-vulkan-cts-24.test --deqp-case=dEQP-VK.info.*"
-    echo "  baconyao-vulkan-cts-24.test --caselist=mustpass/main/vk-default/api.txt"
+    echo "  baconyao-vulkan-cts-26.test dEQP-VK.info.build"
+    echo "  baconyao-vulkan-cts-26.test --deqp-case=dEQP-VK.info.*"
+    echo "  baconyao-vulkan-cts-26.test --caselist=mustpass/main/vk-default/api.txt"
     exit 1
 fi
 
@@ -89,14 +89,14 @@ if [ "$NO_CONFINEMENT" = "true" ]; then
     export LD_LIBRARY_PATH="/usr/lib/${ARCH_TRIPLE}:/usr/lib"
     echo "Host Vulkan loader: ${HOST_VK}"
 else
-    # Set up Vulkan ICD and libraries from gpu-2404 content interface
-    if [ -d "${SNAP}/gpu-2404" ]; then
+    # Set up Vulkan ICD and libraries from gpu-2604 content interface
+    if [ -d "${SNAP}/gpu-2604" ]; then
         export VK_ICD_FILENAMES
-        VK_ICD_FILENAMES=$(ls "${SNAP}/gpu-2404/usr/share/vulkan/icd.d/"*.json 2>/dev/null | tr '\n' ':')
-        export LD_LIBRARY_PATH="${SNAP}/gpu-2404/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+        VK_ICD_FILENAMES=$(ls "${SNAP}/gpu-2604/usr/share/vulkan/icd.d/"*.json 2>/dev/null | tr '\n' ':')
+        export LD_LIBRARY_PATH="${SNAP}/gpu-2604/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     else
-        echo "Error: gpu-2404 content interface not found at ${SNAP}/gpu-2404"
-        echo "Connect it with: snap connect baconyao-vulkan-cts-24:gpu-2404 mesa-2404:gpu-2404"
+        echo "Error: gpu-2604 content interface not found at ${SNAP}/gpu-2604"
+        echo "Connect it with: snap connect baconyao-vulkan-cts-26:gpu-2604 mesa-2604:gpu-2604"
         exit 1
     fi
 fi

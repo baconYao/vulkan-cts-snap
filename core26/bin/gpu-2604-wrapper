@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "$SNAP/gpu-2604/bin/gpu-2604-provider-wrapper" "$@"

@@ -8,5 +8,5 @@ find "${SNAP}/usr/share/vulkan-cts/mustpass" -name "*.txt" 2>/dev/null | grep -v
 done
 echo ""
 echo "Usage examples:"
-echo "  baconyao-vulkan-cts-22.test --caselist=mustpass/main/vk-default/api.txt"
-echo "  baconyao-vulkan-cts-22.test --deqp-case=dEQP-VK.info.build"
+echo "  baconyao-vulkan-cts-26.test --caselist=mustpass/main/vk-default/api.txt"
+echo "  baconyao-vulkan-cts-26.test --deqp-case=dEQP-VK.info.build"

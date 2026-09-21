@@ -6,4 +6,4 @@ set -e
 # and snap-local.
 snapctl set agent=enabled || true
 
-echo "baconyao-vulkan-cts-22: install hook completed (strict confinement)."
+echo "baconyao-vulkan-cts-26: install hook completed (strict confinement)."

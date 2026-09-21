@@ -39,13 +39,13 @@ for arg in "$@"; do
 done
 
 if [ "$HAS_TESTSPEC" = false ]; then
-    echo "Usage: vulkan-cts.test [--no-confinement] <test-spec> [args passed to deqp-vk]"
+    echo "Usage: baconyao-vulkan-cts-22.test [--no-confinement] <test-spec> [args passed to deqp-vk]"
     echo ""
     echo "  <test-spec> is one of:"
     echo "    --deqp-case=<pattern>   Run tests matching a case name or glob patterni from caselist files"
     echo "                            (e.g. dEQP-VK.info.* or dEQP-VK.info.build)"
     echo "    --caselist=<path>       Run all tests listed in a caselist file."
-    echo "                            Use a path as shown by 'vulkan-cts.list-tests'."
+    echo "                            Use a path as shown by 'baconyao-vulkan-cts-22.list-tests'."
     echo "    <pattern>               Shorthand for --deqp-case=<pattern>"
     echo ""
     echo "  --no-confinement          Skip snap-bundled GPU/Vulkan drivers and use host"
@@ -56,9 +56,9 @@ if [ "$HAS_TESTSPEC" = false ]; then
     echo "  Vulkan CTS runner). Run 'deqp-vk --help' inside the snap for the full list."
     echo ""
     echo "Examples:"
-    echo "  vulkan-cts.test dEQP-VK.info.build"
-    echo "  vulkan-cts.test --deqp-case=dEQP-VK.info.*"
-    echo "  vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt"
+    echo "  baconyao-vulkan-cts-22.test dEQP-VK.info.build"
+    echo "  baconyao-vulkan-cts-22.test --deqp-case=dEQP-VK.info.*"
+    echo "  baconyao-vulkan-cts-22.test --caselist=mustpass/main/vk-default/api.txt"
     exit 1
 fi
 
@@ -96,7 +96,7 @@ else
         export LD_LIBRARY_PATH="${SNAP}/graphics/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     else
         echo "Error: graphics-core22 content interface not found at ${SNAP}/graphics"
-        echo "Connect it with: snap connect vulkan-cts:graphics-core22 mesa-core22:graphics-core22"
+        echo "Connect it with: snap connect baconyao-vulkan-cts-22:graphics-core22 mesa-core22:graphics-core22"
         exit 1
     fi
 fi

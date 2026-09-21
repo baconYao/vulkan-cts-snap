@@ -16,18 +16,28 @@ jobs:
         # base:    the project directory to build (each is a self-contained
         #          snapcraft project rooted at <dir>/snap/snapcraft.yaml)
         # arch:    matches the label used to select the self-hosted runner
-        # release: Snap Store channel to publish to
+        # release: Snap Store channel to publish to. Each base is its own
+        #          separate Snap Store package name (baconyao-vulkan-cts-22/
+        #          -24/-26, set via the name: field in each snapcraft.yaml)
+        #          rather than a track of one shared package, so every base
+        #          publishes to its own "edge" channel.
         include:
           - base: core22
             arch: x64
-            release: core22/edge
+            release: edge
           - base: core22
             arch: arm64
-            release: core22/edge
+            release: edge
           - base: core24
             arch: x64
             release: edge
           - base: core24
+            arch: arm64
+            release: edge
+          - base: core26
+            arch: x64
+            release: edge
+          - base: core26
             arch: arm64
             release: edge
     runs-on: [self-hosted, linux, "${{ matrix.arch }}", large]
@@ -55,14 +65,20 @@ jobs:
         include:
           - base: core22
             arch: x64
-            release: core22/edge
+            release: edge
           - base: core22
             arch: arm64
-            release: core22/edge
+            release: edge
           - base: core24
             arch: x64
             release: edge
           - base: core24
+            arch: arm64
+            release: edge
+          - base: core26
+            arch: x64
+            release: edge
+          - base: core26
             arch: arm64
             release: edge
     runs-on: [self-hosted, linux, "${{ matrix.arch }}", large]

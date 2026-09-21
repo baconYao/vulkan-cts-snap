@@ -1,4 +1,4 @@
-name: vulkan-cts
+name: baconyao-vulkan-cts-22
 base: core22
 confinement: strict
 lint:

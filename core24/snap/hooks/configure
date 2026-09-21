@@ -4,4 +4,4 @@
 Minimal configure hook for strict confinement.
 Avoids external snap dependencies and /etc writes.
 """
-print("vulkan-cts: configure hook completed (strict confinement).")
+print("baconyao-vulkan-cts-24: configure hook completed (strict confinement).")

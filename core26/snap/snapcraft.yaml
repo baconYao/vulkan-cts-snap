@@ -1,5 +1,5 @@
-name: baconyao-vulkan-cts-24
-base: core24
+name: baconyao-vulkan-cts-26
+base: core26
 confinement: strict
 lint:
   ignore:
@@ -7,46 +7,51 @@ lint:
 platforms:
   amd64:
     build-on: [amd64]
-version: '1.4.5'
+  arm64:
+    build-on: [amd64, arm64]
+version: '1.4.6'
 license: Apache-2.0
 summary: Khronos Vulkan Conformance Test Suite
 description: |
   Baseline snap for the Khronos Vulkan CTS. Builds the deqp-vk
   test binary from source via CMake and ships an executable for running tests.
 
+  The core26 variant, built against the toolchain and drivers in the 26.04
+  archive.
+
 plugs:
-  gpu-2404:
+  gpu-2604:
     interface: content
-    target: $SNAP/gpu-2404
-    default-provider: mesa-2404
+    target: $SNAP/gpu-2604
+    default-provider: mesa-2604
 
 apps:
   test:
     command: test
     command-chain:
-      - bin/gpu-2404-wrapper
+      - bin/gpu-2604-wrapper
     plugs:
       - opengl
-      - gpu-2404
+      - gpu-2604
   list-tests:
     command: list_tests
   vulkaninfo:
     command: usr/bin/vulkaninfo
     command-chain:
-      - bin/gpu-2404-wrapper
+      - bin/gpu-2604-wrapper
     plugs:
       - opengl
-      - gpu-2404
+      - gpu-2604
       - x11
 
 parts:
-  gpu-2404-wrapper:
+  gpu-2604-wrapper:
     source: bin/
     plugin: dump
     organize:
-      gpu-2404-wrapper: bin/gpu-2404-wrapper
+      gpu-2604-wrapper: bin/gpu-2604-wrapper
     stage:
-      - bin/gpu-2404-wrapper
+      - bin/gpu-2604-wrapper
 
   test-conformance:
     source: bin/
@@ -136,10 +141,10 @@ parts:
             fi
           done
           printf '%s\n' \
-            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse" \
-            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse" \
-            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse" \
-            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-backports main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports resolute main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports resolute-updates main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports resolute-security main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports resolute-backports main restricted universe multiverse" \
             > /etc/apt/sources.list.d/arm64.list
           apt-get update
           apt-get install -y libxcb1-dev:arm64 libx11-dev:arm64 libglvnd-dev:arm64
