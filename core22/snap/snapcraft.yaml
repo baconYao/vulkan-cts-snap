@@ -70,8 +70,6 @@ parts:
     source: https://github.com/KhronosGroup/VK-GL-CTS.git
     source-branch: vulkan-cts-$SNAPCRAFT_PROJECT_VERSION
     source-type: git
-    build-attributes:
-      - enable-patchelf
     build-packages:
       - build-essential
       - cmake
