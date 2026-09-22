@@ -225,6 +225,61 @@ ELF interpreter 已修正為正確的 arm64 路徑。若之後拿到 22.04 的
 arm64 機器，建議優先重新驗證這個組合。core22 的 amd64 版本則沒有
 這個限制（可以在一般 x86_64 桌機/伺服器上安裝測試）。
 
+## Bug 6（新發現，待驗證）：arm64 cross-build 誤把 amd64 的 stage-packages 打包進去
+
+新增機器 **G700 2**（Ubuntu Core 22, arm64，MediaTek Genio 700，內容
+介面 GPU 提供者 snap 為 `mediatek-genio-g700-gpu-drivers-core22`）
+第一次讓 core22 的 arm64 版本有機會在真實硬體上測試，結果發現一個
+之前完全沒被踩到的 bug：
+
+```
+/snap/baconyao-vulkan-cts-22/x1/usr/bin/deqp-vk: error while loading
+shared libraries: libGL.so.1: cannot open shared object file:
+No such file or directory
+```
+
+**根本原因**：core22（以及 core24、core26，三個 base 都有同樣的
+程式碼結構）在 `override-build`（也就是 BUILD 階段）裡執行
+`dpkg --add-architecture arm64` 與改寫 `/etc/apt/sources.list`，
+但是 `stage-packages`（`libgl1`、`libx11-6`、`libxcb1` 等）是在
+**PULL 階段**就已經被 craft-parts 抓取完成，時機遠早於
+`override-build` 執行。因此 cross-build（在 amd64 host 上編譯
+arm64 目標）時，`stage-packages` 實際上是用 amd64 host 原生的
+apt 設定去解析，結果把 **amd64 版本**的 `.deb` 檔案打包進 arm64
+的 snap 裡（可以在 squashfs 裡看到 `usr/lib/x86_64-linux-gnu/`
+這種明顯錯誤的路徑，而不是預期的 `usr/lib/aarch64-linux-gnu/`）。
+
+這個 bug 一直沒被發現，是因為先前測試過的 5 台機器（G1200 2/3、
+G700 1、CIX P1、NXP Leuven）用的都是 core24/core26，而且它們的
+GPU 廠商 snap 內容介面（`gpu-2404`/`gpu-2604`/host deb 驅動）都
+「完整」提供了自己的 `libGL`/`libX11`/`libxcb`，透過
+`LD_LIBRARY_PATH` 排序優先於 snap 自帶的函式庫，蓋掉了那些打包
+錯誤架構的無效檔案，所以從來沒有真的被載入、也就沒有觸發錯誤。
+但 G700 2 的 `mediatek-genio-g700-gpu-drivers-core22` 內容介面只
+提供 GLES/EGL（`libGLESv2.so`、`libEGL.so`），完全沒有桌面版的
+`libGL.so.1`，這時候就只能依賴 snap 自己打包的版本——結果那個版本
+是 amd64 的，在 aarch64 機器上當然載入失敗。
+
+**修正方式**：把三個 base 的 `dpkg --add-architecture arm64` +
+`apt` 來源設定搬到新的 `override-pull` 步驟（並在最後呼叫
+`craftctl default`），確保這段設定在 `stage-packages` 真正被抓取
+「之前」執行，這樣 arm64 build 才會抓到正確的 arm64 `.deb`。
+
+**目前狀態：程式碼修正已完成並通過 YAML 語法驗證，但尚未在
+Launchpad 上重新建置驗證。** 原因是這台開發機上儲存的 Launchpad
+remote-build OAuth 憑證已經過期，`snapcraft remote-build` 要求
+透過瀏覽器手動完成授權（開啟一個 `https://launchpad.net/+authorize-token?...`
+連結並按下「Allow」），但這個環境沒有瀏覽器可以操作，因此本次
+工作階段沒辦法重新建置 arm64 版本、也就無法在 G700 2 上重新測試
+確認修正有效。等取得新的 Launchpad 授權後，需要：
+
+1. 重新執行 arm64 版本的 remote-build（core22/core24/core26）。
+2. 用 `unsquashfs` 檢查產出的 snap 裡 `usr/lib/` 底下是否變成
+   `aarch64-linux-gnu`（而不是 `x86_64-linux-gnu`）。
+3. 上傳到 G700 2，重新安裝、連接 `graphics-core22` content
+   interface，執行 `baconyao-vulkan-cts-22.test dEQP-VK.info.build`
+   確認不再出現 `libGL.so.1: cannot open shared object file`。
+
 ## Snap Store 發布現況
 
 `.github/workflows/snap-ci.yml` 已經設定好完整的 CI/CD 流程：
