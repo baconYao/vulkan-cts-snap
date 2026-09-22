@@ -96,27 +96,9 @@ parts:
       - libxext6
       - libwayland-client0
       - vulkan-tools
-    override-build: |
+    override-pull: |
       set -eux
-
-      python3 external/fetch_sources.py
-      mkdir build && cd build
-
-      # Different archs need different buildflags; only set arch flags
-      # when building natively to avoid passing host-incompatible -march.
-      CMAKE_CLANG_FLAGS=""
-      CMAKE_C_COMPILER=""
-      CMAKE_CXX_COMPILER=""
-      CMAKE_SYSTEM_PROCESSOR=""
-      if [ "$CRAFT_ARCH_BUILD_FOR" == "amd64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
-          CMAKE_CLANG_FLAGS=-m64
-      elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "arm64" ]; then
-          CMAKE_CLANG_FLAGS=-march=armv8-a
-      elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
-          CMAKE_CLANG_FLAGS=-march=armv8-a
-          CMAKE_C_COMPILER=aarch64-linux-gnu-gcc
-          CMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
-          CMAKE_SYSTEM_PROCESSOR=aarch64
+      if [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
           dpkg --add-architecture arm64
           if [ -f /etc/apt/sources.list ]; then
             sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
@@ -147,6 +129,29 @@ parts:
             "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-backports main restricted universe multiverse" \
             > /etc/apt/sources.list.d/arm64.list
           apt-get update
+      fi
+      craftctl default
+    override-build: |
+      set -eux
+
+      python3 external/fetch_sources.py
+      mkdir build && cd build
+
+      # Different archs need different buildflags; only set arch flags
+      # when building natively to avoid passing host-incompatible -march.
+      CMAKE_CLANG_FLAGS=""
+      CMAKE_C_COMPILER=""
+      CMAKE_CXX_COMPILER=""
+      CMAKE_SYSTEM_PROCESSOR=""
+      if [ "$CRAFT_ARCH_BUILD_FOR" == "amd64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
+          CMAKE_CLANG_FLAGS=-m64
+      elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "arm64" ]; then
+          CMAKE_CLANG_FLAGS=-march=armv8-a
+      elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
+          CMAKE_CLANG_FLAGS=-march=armv8-a
+          CMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+          CMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+          CMAKE_SYSTEM_PROCESSOR=aarch64
           # Multi-Arch:same libs (e.g. libelf1) must match the exact version
           # already installed for amd64, or apt refuses to pull in the arm64
           # copy as a transitive dependency. Install it explicitly first so
